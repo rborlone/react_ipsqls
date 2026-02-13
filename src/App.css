@@ -1,0 +1,99 @@
+.App {
+  width: 100%;
+}
+
+.file-label {
+  cursor: pointer;
+  color: #888;
+}
+
+.results {
+  margin-top: 2rem;
+}
+
+.results h2 {
+  color: #646cff;
+  margin-bottom: 1rem;
+}
+
+.status-success {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.status-fail {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+.progress-info {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background-color: #1a1a1a;
+  border-radius: 8px;
+  text-align: center;
+  border: 1px solid #646cff;
+}
+
+.progress-info p {
+  margin: 0;
+  color: #888;
+}
+
+.progress-info strong {
+  color: #646cff;
+}
+
+.scroll-trigger {
+  padding: 2rem;
+  text-align: center;
+  min-height: 100px;
+}
+
+.loading-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: #646cff;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #2a2a2a;
+  border-top: 4px solid #646cff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.complete-message {
+  padding: 2rem;
+  text-align: center;
+  color: #4caf50;
+  font-weight: bold;
+  font-size: 1.1em;
+  background-color: rgba(76, 175, 80, 0.1);
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+  table {
+    font-size: 0.85em;
+  }
+
+  th,
+  td {
+    padding: 0.5rem;
+  }
+
+  .flag {
+    font-size: 1.5em;
+  }
+}
