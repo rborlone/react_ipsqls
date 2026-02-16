@@ -181,15 +181,58 @@ async function getIpInfo(ip) {
 - [ ] Búsqueda/filtrado en la tabla
 
 ## Notas Importantes
-- **No usar librería de banderas externa**: Se usan emojis nativos para evitar dependencias
-- **Rate limiting crítico**: ip-api.com bloquea si excedes 45 req/min
+- **Banderas SVG**: Se usa la librería `flag-icons` para banderas de alta calidad (instalada vía npm)
+- **Rate limiting crítico**: ip-api.com bloquea si excedes 45 req/min (el caché resuelve esto)
 - **Intersection Observer**: Compatible con navegadores modernos (no IE11)
 - **Archivos grandes**: Testeado con éxito, carga incremental mejora UX significativamente
+- **Caché persistente**: MongoDB mantiene datos entre reinicios, Redis se limpia al reiniciar
+
+## Inicio Rápido
+
+### Con Docker (Recomendado)
+```bash
+# Windows
+start.bat
+
+# Linux/Mac
+chmod +x start.sh && ./start.sh
+
+# O manualmente
+docker-compose up -d
+```
+
+### Sin Docker (Desarrollo Local)
+```bash
+# Terminal 1 - Backend
+cd backend
+npm install
+npm start
+
+# Terminal 2 - Frontend
+npm install
+npm run dev
+```
+
+### Verificar que funciona
+```bash
+# Health check
+curl http://localhost:3001/health
+
+# Test de IP
+curl http://localhost:3001/api/ip/8.8.8.8
+
+# Stats
+curl http://localhost:3001/api/stats
+```
 
 ## Current Status
 - ✅ Proyecto completamente funcional
+- ✅ Sistema de caché Redis + MongoDB implementado
 - ✅ Lazy loading implementado
-- ✅ UI responsive y moderna
+- ✅ UI responsive y moderna con banderas SVG
+- ✅ Backend API REST con 5 endpoints
+- ✅ Docker Compose con 4 servicios orquestados
 - ✅ Manejo de errores robusto
+- ✅ Documentación completa (README, QUICKSTART, API_EXAMPLES)
 - 🚀 Listo para producción
 
