@@ -44,6 +44,38 @@
   color: #646cff;
 }
 
+.cache-stats {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+  font-size: 0.9em;
+}
+
+.cache-stats span {
+  cursor: help;
+}
+
+.source-badge {
+  margin-left: 0.5rem;
+  font-size: 0.9em;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  cursor: help;
+}
+
+.source-redis {
+  background-color: rgba(255, 0, 0, 0.1);
+}
+
+.source-mongodb {
+  background-color: rgba(0, 255, 0, 0.1);
+}
+
+.source-api {
+  background-color: rgba(100, 108, 255, 0.1);
+}
+
 .scroll-trigger {
   padding: 2rem;
   text-align: center;
@@ -83,6 +115,13 @@
   margin: 1rem 0;
 }
 
+.flag .fi {
+  font-size: 1.8em;
+  line-height: 1;
+  border-radius: 2px;
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.3);
+}
+
 @media (max-width: 768px) {
   table {
     font-size: 0.85em;
@@ -93,7 +132,7 @@
     padding: 0.5rem;
   }
 
-  .flag {
+  .flag .fi {
     font-size: 1.5em;
   }
 }

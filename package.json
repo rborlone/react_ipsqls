@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.6.0",
+    "country-flag-icons": "^1.5.9",
+    "flag-icons": "^7.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "xlsx": "^0.18.5",
-    "axios": "^1.6.0",
-    "country-flag-icons": "^1.5.9"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

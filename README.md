@@ -1,136 +1,225 @@
-# 🌍 IP Geolocation Viewer
+# 🌍 IP Geolocation Viewer con Cache Inteligente
 
-Aplicación React que permite cargar un archivo Excel con direcciones IP y visualizar su geolocalización con banderas de países.
+Aplicación completa full-stack que permite subir archivos Excel con direcciones IP y visualiza su geolocalización con un sistema inteligente de caché multinivel.
+
+## 🏗️ Arquitectura
+
+### Stack Tecnológico
+- **Frontend**: React 18 + Vite + flag-icons
+- **Backend**: Node.js + Express
+- **Cache**: Redis (memoria rápida)
+- **Database**: MongoDB (persistencia)
+- **Orquestación**: Docker Compose
+
+### Flujo de Datos (Cache Strategy)
+```
+Usuario consulta IP
+    ↓
+1. ¿Está en Redis? → ✅ Retornar (más rápido: ~1ms)
+    ↓ No
+2. ¿Está en MongoDB? → ✅ Guardar en Redis + Retornar (~10ms)
+    ↓ No
+3. Consultar API externa → ✅ Guardar en MongoDB + Redis + Retornar (~200ms)
+```
 
 ## 🚀 Características
 
-- **Carga de archivos Excel**: Soporta formatos .xlsx y .xls
-- **Geolocalización automática**: Obtiene datos de ubicación usando la API de ip-api.com
-- **Banderas de países**: Muestra emojis de banderas para cada país
-- **Información detallada**: País, región, ciudad, ISP, coordenadas GPS
-- **Manejo de rate limiting**: Control automático de peticiones para evitar límites de la API
-- **Interfaz responsive**: Diseño adaptable a dispositivos móviles
+### ✅ Sistema de Cache Multinivel
+- **Redis**: Cache L1 (TTL: 24 horas por defecto)
+- **MongoDB**: Cache L2 (persistencia permanente)
+- **API externa**: ip-api.com (solo cuando no existe en cache)
 
-## 📋 Requisitos
+### ✅ UI Features
+- Lazy loading con scroll infinito
+- Banderas de países con flag-icons (SVG de alta calidad)
+- Indicadores de fuente de datos (⚡Redis / 💾MongoDB / 🌐API)
+- Estadísticas en tiempo real
+- Tema oscuro responsive
 
-- Node.js 16 o superior
-- npm o yarn
+### ✅ Backend API
+- `GET /api/ip/:ip` - Obtener info de una IP
+- `POST /api/ips/batch` - Proceso en lote de múltiples IPs
+- `GET /api/stats` - Estadísticas de caché
+- `DELETE /api/cache/clear` - Limpiar caché Redis
+- `GET /health` - Health check
 
-## 🛠️ Instalación
+## 🐳 Instalación con Docker (Recomendado)
 
-1. Clona el repositorio o descarga los archivos
+### Prerequisitos
+- Docker Desktop instalado
+- Docker Compose
 
-2. Instala las dependencias:
+### Levantar toda la infraestructura
 ```bash
-npm install
+# Clonar o descargar el proyecto
+cd ipsqls
+
+# Levantar todos los servicios
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Verificar que todos los servicios estén corriendo
+docker-compose ps
 ```
 
-## ▶️ Ejecución
+### Servicios disponibles
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3001
+- **Redis**: localhost:6379
+- **MongoDB**: localhost:27017
 
-Para iniciar el servidor de desarrollo:
-
+### Comandos útiles
 ```bash
+# Detener servicios
+docker-compose down
+
+# Detener y eliminar volúmenes (limpiar datos)
+docker-compose down -v
+
+# Reconstruir imágenes
+docker-compose up --build
+
+# Ver estadísticas de caché
+curl http://localhost:3001/api/stats
+
+# Limpiar caché Redis
+curl -X DELETE http://localhost:3001/api/cache/clear
+```
+
+## 💻 Instalación Local (Sin Docker)
+
+### Backend
+```bash
+cd backend
+npm install
+npm start
+```
+
+### Frontend
+```bash
+npm install
 npm run dev
 ```
 
-La aplicación estará disponible en `http://localhost:5173`
-
-## 📦 Construcción para producción
-
-Para crear una versión optimizada para producción:
-
+### Servicios requeridos
+Necesitas tener Redis y MongoDB corriendo localmente:
 ```bash
-npm run build
+# Redis (puerto 6379)
+redis-server
+
+# MongoDB (puerto 27017)
+mongod
 ```
 
-Para previsualizar la versión de producción:
+## 📊 Uso de la Aplicación
 
-```bash
-npm run preview
+1. Acceder a http://localhost:5173
+2. Subir archivo Excel (.xlsx/.xls) con IPs
+3. Ver resultados con geolocalización
+4. Scroll automático carga más IPs
+5. Observar estadísticas de caché en tiempo real
+
+### Formato del Excel
+El archivo puede tener cualquier estructura, la app extrae automáticamente las IPs válidas:
+```
+| Columna 1    | Columna 2    | ...
+|--------------|--------------|-----
+| 8.8.8.8      | Otros datos  | ...
+| 1.1.1.1      | ...          | ...
 ```
 
-## 📊 Formato del archivo Excel
+## 🔧 Configuración
 
-El archivo Excel debe contener direcciones IP en la primera columna. Ejemplo:
-
+### Variables de Entorno - Backend
+```env
+PORT=3001
+REDIS_URL=redis://redis:6379
+MONGODB_URL=mongodb://mongodb:27017/ipsqls
+IP_API_URL=http://ip-api.com/json
+CACHE_TTL=86400  # 24 horas en segundos
 ```
-IP
-24.48.0.1
-8.8.8.8
-1.1.1.1
+
+### Variables de Entorno - Frontend
+```env
+VITE_API_URL=http://localhost:3001
 ```
 
-Las IPs pueden estar en cualquier columna, el sistema las detectará automáticamente usando expresiones regulares.
+## 📈 Mejoras de Performance
 
-## 🔑 API Utilizada
+### Con Cache vs Sin Cache
+- **Primera consulta** (API): ~200-300ms
+- **Segunda consulta** (MongoDB): ~10-20ms
+- **Tercera+ consulta** (Redis): ~1-5ms
 
-La aplicación utiliza **ip-api.com** para obtener datos de geolocalización:
-- **Límite gratuito**: 45 peticiones por minuto
-- **Endpoint**: `http://ip-api.com/json/{ip}`
+### Rate Limiting
+- Sin cache: Limitado a 45 req/min (API gratuita)
+- Con cache: Ilimitado para IPs ya consultadas
 
-La aplicación incluye control automático para respetar estos límites.
-
-## 📚 Tecnologías
-
-- **React 18**: Framework de UI
-- **Vite**: Build tool y dev server
-- **xlsx**: Librería para leer archivos Excel
-- **axios**: Cliente HTTP para las peticiones a la API
-- **CSS3**: Estilos con tema oscuro responsive
-
-## 🎨 Interfaz
-
-La aplicación presenta:
-- Área de carga de archivos con drag & drop visual
-- Indicador de carga durante el procesamiento
-- Tabla con resultados ordenados mostrando:
-  - Dirección IP
-  - Bandera del país (emoji)
-  - País
-  - Región
-  - Ciudad
-  - ISP (Proveedor de Internet)
-  - Coordenadas GPS
-  - Estado de la consulta
-
-## ⚠️ Limitaciones
-
-- La API gratuita de ip-api.com tiene un límite de 45 peticiones por minuto
-- Para listas grandes de IPs, el procesamiento puede tomar varios minutos
-- Se recomienda no exceder 100 IPs por archivo para evitar tiempos de espera prolongados
-
-## 🤝 Contribuciones
-
-Las contribuciones son bienvenidas. Por favor, abre un issue o pull request para sugerencias o mejoras.
-
-## 📄 Licencia
-
-MIT
-
-## 👨‍💻 Desarrollo
-
-Estructura del proyecto:
+## 🗃️ Estructura del Proyecto
 ```
 ipsqls/
+├── backend/
+│   ├── server.js           # API Express
+│   ├── package.json
+│   ├── Dockerfile
+│   └── .env
 ├── src/
-│   ├── App.jsx           # Componente principal
-│   ├── App.css           # Estilos del componente
-│   ├── main.jsx          # Punto de entrada
-│   ├── index.css         # Estilos globales
+│   ├── App.jsx             # Frontend React
+│   ├── App.css
+│   ├── main.jsx
 │   └── utils/
-│       └── countryHelpers.js  # Utilidades para países
-├── index.html
-├── package.json
-└── vite.config.js
+│       └── countryHelpers.js
+├── docker-compose.yml       # Orquestación
+├── Dockerfile.frontend
+├── .env
+└── README.md
 ```
 
-## 🐛 Solución de problemas
+## 🚀 Roadmap / Mejoras Futuras
 
-**Problema**: No se detectan IPs en el archivo Excel
-- **Solución**: Verifica que las IPs estén en formato válido (xxx.xxx.xxx.xxx)
+- [ ] Autenticación y usuarios
+- [ ] Exportar resultados a CSV/Excel
+- [ ] Dashboard de analíticas
+- [ ] Filtros avanzados por país/región
+- [ ] API key para ip-api.com (versión Pro)
+- [ ] Webhooks para notificaciones
+- [ ] GraphQL API
+- [ ] Tests unitarios y E2E
 
-**Problema**: Error de rate limiting
-- **Solución**: La aplicación controla esto automáticamente, espera a que termine el procesamiento
+## 📝 Logs y Debugging
 
-**Problema**: La aplicación no carga
-- **Solución**: Asegúrate de haber ejecutado `npm install` primero
+### Ver logs del backend
+```bash
+docker-compose logs -f backend
+```
+
+Los logs muestran la fuente de cada consulta:
+- 🟢 Cache hit (Redis)
+- 🟡 Cache hit (MongoDB)
+- 🔵 Fetching from API
+
+## 🐛 Solución de Problemas
+
+**Problema**: Los contenedores no inician
+- **Solución**: Verificar que Docker Desktop esté corriendo
+
+**Problema**: Error de conexión al backend
+- **Solución**: Verificar que el backend esté en http://localhost:3001/health
+
+**Problema**: No se muestran las banderas
+- **Solución**: Verificar que flag-icons esté instalado: `npm install flag-icons`
+
+## 🤝 Contribuciones
+Pull requests son bienvenidos. Para cambios mayores, por favor abrir un issue primero.
+
+## 📄 Licencia
+MIT
+
+## 👨‍💻 Autor
+Red Negocios - Proyecto Codelco Licitación
+
+---
+
+**Nota**: Este proyecto usa la API gratuita de ip-api.com que tiene límite de 45 requests/minuto. El sistema de caché minimiza las llamadas a la API

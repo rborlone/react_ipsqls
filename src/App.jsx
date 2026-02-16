@@ -5,6 +5,7 @@ import { getCountryCode } from './utils/countryHelpers';
 import './App.css';
 
 const BATCH_SIZE = 10; // Número de IPs a procesar por lote
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function App() {
   const [ipData, setIpData] = useState([]);
@@ -13,6 +14,7 @@ function App() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [totalIps, setTotalIps] = useState(0);
+  const [stats, setStats] = useState(null);
   const observerRef = useRef(null);
   const loadingRef = useRef(false);
 
@@ -70,32 +72,59 @@ function App() {
     const batch = remainingIps.slice(0, BATCH_SIZE);
     const newRemaining = remainingIps.slice(BATCH_SIZE);
 
-    const results = [];
-    for (let i = 0; i < batch.length; i++) {
-      try {
-        const response = await axios.get(`http://ip-api.com/json/${batch[i]}`);
-        results.push({
-          ip: batch[i],
-          ...response.data
-        });
+    try {
+      // Usar endpoint batch del backend
+      const response = await axios.post(`${API_URL}/api/ips/batch`, {
+        ips: batch
+      });
 
-        // Pequeño delay entre requests (aproximadamente 1.5 segundos por IP)
-        await new Promise(resolve => setTimeout(resolve, 1500));
-      } catch (err) {
-        results.push({
-          ip: batch[i],
-          status: 'fail',
-          message: 'Error al obtener datos'
-        });
+      const results = response.data.results || [];
+      const updatedData = [...currentData, ...results];
+      setIpData(updatedData);
+      setPendingIps(newRemaining);
+
+      // Actualizar estadísticas después de procesar el batch
+      fetchStats();
+    } catch (err) {
+      // Si falla el batch, intentar uno por uno como fallback
+      console.error('Error en batch request, usando fallback:', err);
+      const results = [];
+      for (let i = 0; i < batch.length; i++) {
+        try {
+          const response = await axios.get(`${API_URL}/api/ip/${batch[i]}`);
+          results.push(response.data);
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (err) {
+          results.push({
+            ip: batch[i],
+            status: 'fail',
+            message: 'Error al obtener datos'
+          });
+        }
       }
+      const updatedData = [...currentData, ...results];
+      setIpData(updatedData);
+      setPendingIps(newRemaining);
     }
 
-    const updatedData = [...currentData, ...results];
-    setIpData(updatedData);
-    setPendingIps(newRemaining);
     setLoadingMore(false);
     loadingRef.current = false;
   };
+
+  // Obtener estadísticas de caché
+  const fetchStats = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/stats`);
+      setStats(response.data);
+    } catch (err) {
+      console.error('Error al obtener estadísticas:', err);
+    }
+  };
+
+  // Cargar estadísticas al iniciar
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   // Configurar Intersection Observer para detectar scroll
   useEffect(() => {
@@ -161,6 +190,16 @@ function App() {
             Cargadas: <strong>{ipData.length}</strong> de <strong>{totalIps}</strong> IPs
             {pendingIps.length > 0 && ' - Scroll para cargar más'}
           </p>
+          {stats && (
+            <div className="cache-stats">
+              <span title="IPs en Redis (caché rápido)">
+                🔴 Redis: <strong>{stats.redis.cachedIps}</strong>
+              </span>
+              <span title="IPs en MongoDB (persistencia)">
+                🟢 MongoDB: <strong>{stats.mongodb.totalIps}</strong>
+              </span>
+            </div>
+          )}
         </div>
       )}
 
@@ -185,7 +224,11 @@ function App() {
                 <tr key={index}>
                   <td>{item.ip}</td>
                   <td className="flag">
-                    {item.countryCode ? getFlag(item.countryCode) : '🏳️'}
+                    {item.countryCode ? (
+                      <span className={`fi fi-${item.countryCode.toLowerCase()}`} title={item.country}></span>
+                    ) : (
+                      <span className="fi fi-xx" title="Desconocido"></span>
+                    )}
                   </td>
                   <td>{item.country || '-'}</td>
                   <td>{item.regionName || '-'}</td>
@@ -201,6 +244,11 @@ function App() {
                     <span className={item.status === 'success' ? 'status-success' : 'status-fail'}>
                       {item.status === 'success' ? '✓' : '✗'}
                     </span>
+                    {item.source && (
+                      <span className={`source-badge source-${item.source}`} title={`Fuente: ${item.source}`}>
+                        {item.source === 'redis' ? '⚡' : item.source === 'mongodb' ? '💾' : '🌐'}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}

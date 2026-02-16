@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # Redis - Cache en memoria
+  redis:
+    image: redis:7-alpine
+    container_name: ipsqls-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - ipsqls-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB - Base de datos
+  mongodb:
+    image: mongo:7
+    container_name: ipsqls-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: ipsqls
+    networks:
+      - ipsqls-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ipsqls-backend
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      REDIS_URL: redis://redis:6379
+      MONGODB_URL: mongodb://mongodb:27017/ipsqls
+      IP_API_URL: http://ip-api.com/json
+      CACHE_TTL: 86400
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ipsqls-network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Frontend (opcional - para desarrollo)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: ipsqls-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3001
+    depends_on:
+      - backend
+    networks:
+      - ipsqls-network
+    volumes:
+      - ./src:/app/src
+      - /app/node_modules
+    command: npm run dev -- --host
+
+networks:
+  ipsqls-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  mongodb_data:
